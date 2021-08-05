@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import pytz
 import asyncio
 import json
-
+from github import Github
 
 
 client = commands.Bot(status=discord.Status.do_not_disturb, activity=discord.Game("SoarCS Leaderboard Bot"), command_prefix = '!')
@@ -24,6 +24,31 @@ user_list = []
 
 
 
+# --Exports to github
+def write_github():
+    github = Github('GitHub Token')
+    repo = github.get_user().get_repo('SoarCS-Presentation-Project')
+    all_files = []
+    contents = repo.get_contents("")
+    while contents:
+        file_content = contents.pop(0)
+        if file_content.type == 'dir':
+            contents.extend(repo.get_contents(file_content.path))
+        else:
+            file = file_content
+            all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
+    
+    with open('leaderboard.csv', 'r') as file:
+        content = file.read()
+    git_file = 'leaderboard.csv'
+    if git_file in all_files:
+        contents = repo.get_contents(git_file)
+        repo.update_file(contents.path, "committing files", content, contents.sha, branch = "main")
+        print(git_file + ' UPDATED')
+    else:
+        repo.create_file(git_file, "committing files", content, branch = "main")
+        print(git_file + 'CREATED')
+
 
 # --Exports to file
 def write_users(user_list):
@@ -31,6 +56,7 @@ def write_users(user_list):
         for sublist in user_list:
             line = "{},{},{}\n".format(sublist[0], sublist[1], sublist[2])
             f.write(line)
+    write_github()
     
 
 
